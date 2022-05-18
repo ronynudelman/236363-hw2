@@ -1,3 +1,10 @@
+.idea/
+Business/
+Example.py
+Tests
+Utility/
+requirements.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
