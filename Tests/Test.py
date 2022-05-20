@@ -142,7 +142,26 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addRAMToDisk(1, 1), "Should work")
         ram = RAM(ramID=2, company="ramox", size=432)
         self.assertEqual(Status.OK, Solution.addRAM(ram), "Should work")
-        self.assertEqual(Status.NOT_EXISTS, Solution.removeRAMFromDisk(ramID=2, diskID=1), "RAM and Disk are not paired")
+        self.assertEqual(Status.NOT_EXISTS, Solution.removeRAMFromDisk(ramID=2, diskID=1),
+                         "RAM and Disk are not paired")
+
+    def test_averageFileSizeOnDisk(self) -> None:
+        disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
+        file = File(fileID=12, type="jpg", size=2)
+        self.assertEqual(Status.OK, Solution.addDiskAndFile(disk=disk, file=file),
+                         "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file, diskID=1),
+                         "Should work")
+        for i in range(1, 10):
+            self.assertEqual(Status.OK, Solution.addFile(File(i, "jpg", 2)), "Should work")
+            self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(i, "jpg", 2), diskID=1),
+                             "Should work")
+        self.assertEqual(2.0, Solution.averageFileSizeOnDisk(1), "Should Work")
+        self.assertEqual(0.0, Solution.averageFileSizeOnDisk(2), "Should get None - there is no diskID 2")
+        disk = Disk(diskID=2, company="pdf", speed=10, free_space=92, cost=87)
+        self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
+        self.assertEqual(0.0, Solution.averageFileSizeOnDisk(2), "Should get None - there are no files on diskID 2")
+
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***

@@ -424,7 +424,21 @@ def removeRAMFromDisk(ramID: int, diskID: int) -> Status:
 
 
 def averageFileSizeOnDisk(diskID: int) -> float:
-    return 0
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        files_on_disk = f"SELECT file_id FROM FilesInDisks WHERE disk_id = {diskID}"
+        rows_affected, result = conn.execute(f"SELECT AVG(size) FROM Files WHERE file_id IN ({files_on_disk})")
+    except DatabaseException:
+        return -1.0
+    finally:
+        if conn:
+            conn.close()
+    assert result.size() == 1
+    row = result[0]
+    if row['avg'] is None:
+        return 0.0
+    return row['avg']
 
 
 def diskTotalRAM(diskID: int) -> int:
