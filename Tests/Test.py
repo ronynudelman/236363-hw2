@@ -109,7 +109,7 @@ class Test(AbstractTest):
         disk = Solution.getDiskByID(11)
         assert disk.getDiskID() is None
 
-    def test_add_file_to_disk(self) -> None:
+    def test_files_on_disks(self) -> None:
         disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
         file = File(fileID=8, type="jpg", size=50)
         self.assertEqual(Status.OK, Solution.addDiskAndFile(disk=disk, file=file),
@@ -125,6 +125,24 @@ class Test(AbstractTest):
         file = File(fileID=99, type="jpg", size=10)
         self.assertEqual(Status.NOT_EXISTS, Solution.addFileToDisk(file=file, diskID=1),
                          "File does not exist")
+        file = File(fileID=8, type="jpg", size=50)
+        self.assertEqual(Status.OK, Solution.removeFileFromDisk(file, 1))
+        self.assertEqual(Status.OK, Solution.removeFileFromDisk(file, 1))
+
+    def test_rams_on_disks(self) -> None:
+        disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
+        ram = RAM(ramID=1, company="ramox", size=500)
+        self.assertEqual(Status.NOT_EXISTS, Solution.addRAMToDisk(ramID=1, diskID=1), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAM(ram), "Should work")
+        self.assertEqual(Status.NOT_EXISTS, Solution.addRAMToDisk(ramID=1, diskID=1), "Disk does not exist")
+        self.assertEqual(Status.OK, Solution.addDisk(disk), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAMToDisk(1, 1), "Should work")
+        self.assertEqual(Status.OK, Solution.removeRAMFromDisk(1, 1), "Should work")
+        self.assertEqual(Status.NOT_EXISTS, Solution.removeRAMFromDisk(1, 2), "RAM does not exist")
+        self.assertEqual(Status.OK, Solution.addRAMToDisk(1, 1), "Should work")
+        ram = RAM(ramID=2, company="ramox", size=432)
+        self.assertEqual(Status.OK, Solution.addRAM(ram), "Should work")
+        self.assertEqual(Status.NOT_EXISTS, Solution.removeRAMFromDisk(ramID=2, diskID=1), "RAM and Disk are not paired")
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***

@@ -359,14 +359,67 @@ def addFileToDisk(file: File, diskID: int) -> Status:
 
 
 def removeFileFromDisk(file: File, diskID: int) -> Status:
+    remove_file_from_disk_query = f"DELETE FROM FilesInDisks WHERE file_id = {file.getFileID()} AND disk_id = {diskID};"
+    update_free_space_query = f"UPDATE Disks " \
+                              f"SET free_space = free_space + {file.getSize()} " \
+                              f"WHERE disk_id = {diskID} AND EXISTS (SELECT * FROM FilesInDisks WHERE " \
+                              f"file_id = {file.getFileID()} AND disk_id = {diskID})" \
+                              f";"
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL(f"BEGIN; "
+                        f"{update_free_space_query} "
+                        f"{remove_file_from_disk_query} "
+                        f"COMMIT;")
+        conn.execute(query)
+    except DatabaseException:
+        conn.rollback()
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def addRAMToDisk(ramID: int, diskID: int) -> Status:
+    insert_file_to_disk_query = f"INSERT INTO RAMsInDisks VALUES ({ramID}, {diskID});"
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL(f"BEGIN; "
+                        f"{insert_file_to_disk_query} "
+                        f"COMMIT;")
+        conn.execute(query)
+    except DatabaseException.FOREIGN_KEY_VIOLATION:
+        conn.rollback()
+        return Status.NOT_EXISTS
+    except DatabaseException.UNIQUE_VIOLATION:
+        conn.rollback()
+        return Status.ALREADY_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        conn.rollback()
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def removeRAMFromDisk(ramID: int, diskID: int) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, _ = conn.execute(f"DELETE FROM RAMsInDisks WHERE ram_id = {ramID} AND disk_id = {diskID};")
+        conn.commit()
+    except DatabaseException:
+        conn.rollback()
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
+    if rows_effected == 0:
+        return Status.NOT_EXISTS
     return Status.OK
 
 
