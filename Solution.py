@@ -442,7 +442,21 @@ def averageFileSizeOnDisk(diskID: int) -> float:
 
 
 def diskTotalRAM(diskID: int) -> int:
-    return 0
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        ram_on_disk = f"SELECT ram_id FROM RAMsInDisks WHERE disk_id = {diskID}"
+        rows_affected, result = conn.execute(f"SELECT SUM(size) FROM RAMs WHERE ram_id IN ({ram_on_disk})")
+    except DatabaseException:
+        return -1
+    finally:
+        if conn:
+            conn.close()
+    assert result.size() == 1
+    row = result[0]
+    if row['sum'] is None:
+        return 0
+    return row['sum']
 
 
 def getCostForType(type: str) -> int:

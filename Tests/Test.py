@@ -162,6 +162,17 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
         self.assertEqual(0.0, Solution.averageFileSizeOnDisk(2), "Should get None - there are no files on diskID 2")
 
+    def test_diskTotalRAM(self) -> None:
+        disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
+        self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
+        for i in range(1, 10):
+            self.assertEqual(Status.OK, Solution.addRAM(RAM(ramID=i, size=2, company="comp")), "Should work")
+            self.assertEqual(Status.OK, Solution.addRAMToDisk(ramID=i, diskID=1), "Should work")
+        self.assertEqual(18, Solution.diskTotalRAM(1), "Should Work")
+        self.assertEqual(0, Solution.diskTotalRAM(2), "Should get None - there is no diskID 2")
+        disk = Disk(diskID=2, company="pdf", speed=10, free_space=92, cost=87)
+        self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
+        self.assertEqual(0, Solution.diskTotalRAM(2), "Should get None - there are no files on diskID 2")
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
