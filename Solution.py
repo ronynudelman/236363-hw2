@@ -19,27 +19,30 @@ from psycopg2 import sql
 
 def createTables():
     create_files_table_query = "CREATE TABLE Files (" \
-                               "file_id INTEGER PRIMARY KEY, " \
+                               "file_id INTEGER, " \
                                "type TEXT NOT NULL, " \
                                "size INTEGER NOT NULL, " \
+                               "PRIMARY KEY (file_id), " \
                                "CHECK (file_id > 0), " \
                                "CHECK (size >= 0)" \
                                ");"
     create_disks_table_query = "CREATE TABLE Disks (" \
-                               "disk_id INTEGER PRIMARY KEY, " \
+                               "disk_id INTEGER, " \
                                "company TEXT NOT NULL, " \
                                "speed INTEGER NOT NULL, " \
                                "free_space INTEGER NOT NULL, " \
                                "cost INTEGER NOT NULL, " \
+                               "PRIMARY KEY (disk_id), " \
                                "CHECK (disk_id > 0), " \
                                "CHECK (speed > 0), " \
                                "CHECK (cost > 0), " \
                                "CHECK (free_space >= 0)" \
                                ");"
     create_ram_table_query = "CREATE TABLE RAMs (" \
-                             "ram_id INTEGER PRIMARY KEY, " \
+                             "ram_id INTEGER, " \
                              "size INTEGER NOT NULL, " \
                              "company TEXT NOT NULL, " \
+                             "PRIMARY KEY (ram_id), " \
                              "CHECK (ram_id > 0), " \
                              "CHECK (size > 0)" \
                              ");"
@@ -72,7 +75,7 @@ def createTables():
     finally:
         if conn:
             conn.close()
-        return Status.OK
+    return Status.OK
 
 
 def clearTables():
@@ -85,11 +88,11 @@ def clearTables():
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(f"BEGIN; "
+                        f"{clear_files_in_disks_table_query} "
+                        f"{clear_rams_in_disks_table_query} "
                         f"{clear_files_table_query} "
                         f"{clear_disks_table_query} "
                         f"{clear_ram_table_query} "
-                        f"{clear_files_in_disks_table_query} "
-                        f"{clear_rams_in_disks_table_query} "
                         f"COMMIT;")
         conn.execute(query)
     except DatabaseException:
@@ -98,7 +101,7 @@ def clearTables():
     finally:
         if conn:
             conn.close()
-        return Status.OK
+    return Status.OK
 
 
 def dropTables():
@@ -111,11 +114,11 @@ def dropTables():
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(f"BEGIN; "
-                        f"{drop_files_table_query} "
-                        f"{drop_disks_table_query} "
-                        f"{drop_ram_table_query} "
                         f"{drop_files_in_disks_table_query} "
                         f"{drop_rams_in_disks_table_query} "
+                        f"{drop_files_table_query} "
+                        f"{drop_disks_table_query} "
+                        f"{drop_ram_table_query} "  
                         f"COMMIT;")
         conn.execute(query)
     except DatabaseException:
@@ -124,15 +127,45 @@ def dropTables():
     finally:
         if conn:
             conn.close()
-        return Status.OK
+    return Status.OK
 
 
 def addFile(file: File) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"INSERT INTO Files VALUES ({file.getFileID()}, '{file.getType()}', {file.getSize()});")
+        conn.commit()
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return Status.ALREADY_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def getFileByID(fileID: int) -> File:
-    return File()
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, result = conn.execute(f"SELECT * FROM Files WHERE file_id = {fileID};")
+        conn.commit()
+    except Exception:
+        return File.badFile()
+    finally:
+        if conn:
+            conn.close()
+    if not result.isEmpty():
+        assert(rows_effected == 1)
+        row = result[0]
+        return File(row["file_id"], row["type"], row["size"])
+    return File.badFile()
 
 
 def deleteFile(file: File) -> Status:
@@ -217,13 +250,3 @@ def mostAvailableDisks() -> List[int]:
 
 def getCloseFiles(fileID: int) -> List[int]:
     return []
-
-
-def main():
-    assert(createTables() == Status.OK)
-    assert(clearTables() == Status.OK)
-    assert(dropTables() == Status.OK)
-
-
-if __name__ == "__main__":
-    main()
