@@ -118,7 +118,7 @@ def dropTables():
                         f"{drop_rams_in_disks_table_query} "
                         f"{drop_files_table_query} "
                         f"{drop_disks_table_query} "
-                        f"{drop_ram_table_query} "  
+                        f"{drop_ram_table_query} "
                         f"COMMIT;")
         conn.execute(query)
     except DatabaseException:
@@ -190,30 +190,137 @@ def deleteFile(file: File) -> Status:
 
 
 def addDisk(disk: Disk) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"INSERT INTO Disks VALUES ({disk.getDiskID()}, '{disk.getCompany()}', "
+                     f"{disk.getSpeed()}, {disk.getFreeSpace()}, {disk.getCost()});")
+        conn.commit()
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return Status.ALREADY_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def getDiskByID(diskID: int) -> Disk:
-    return Disk()
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, result = conn.execute(f"SELECT * FROM Disks WHERE disk_id = {diskID};")
+        conn.commit()
+    except DatabaseException:
+        return Disk.badDisk()
+    finally:
+        if conn:
+            conn.close()
+    if not result.isEmpty():
+        assert rows_effected == 1
+        row = result[0]
+        return Disk(row["disk_id"], row["company"], row["speed"], row["free_space"], row["cost"])
+    return Disk.badDisk()
 
 
 def deleteDisk(diskID: int) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"DELETE FROM Disks WHERE disk_id = {diskID};")
+        conn.commit()
+    except DatabaseException:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def addRAM(ram: RAM) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"INSERT INTO RAMs VALUES ({ram.getRamID()}, {ram.getSize()}, '{ram.getCompany()}');")
+        conn.commit()
+    except DatabaseException.NOT_NULL_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        return Status.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        return Status.ALREADY_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def getRAMByID(ramID: int) -> RAM:
-    return RAM()
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_effected, result = conn.execute(f"SELECT * FROM RAMs WHERE ram_id = {ramID};")
+        conn.commit()
+    except DatabaseException:
+        return RAM.badRAM()
+    finally:
+        if conn:
+            conn.close()
+    if not result.isEmpty():
+        assert rows_effected == 1
+        row = result[0]
+        return RAM(row["ram_id"], row["size"], row["company"])
+    return RAM.badRAM()
 
 
 def deleteRAM(ramID: int) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"DELETE FROM RAMs WHERE ram_id = {ramID};")
+        conn.commit()
+    except DatabaseException:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
 def addDiskAndFile(disk: Disk, file: File) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        add_file = f"INSERT INTO Files VALUES ({file.getFileID()}, '{file.getType()}', {file.getSize()});"
+        add_disk = f"INSERT INTO Disks VALUES ({disk.getDiskID()}, '{disk.getCompany()}', " \
+                   f"{disk.getSpeed()}, {disk.getFreeSpace()}, {disk.getCost()});"
+        query = sql.SQL(f"BEGIN; "
+                        f"{add_disk} "
+                        f"{add_file} "
+                        f"COMMIT;")
+        conn.execute(query)
+    except DatabaseException.NOT_NULL_VIOLATION:
+        conn.rollback()
+        return Status.BAD_PARAMS
+    except DatabaseException.CHECK_VIOLATION:
+        conn.rollback()
+        return Status.BAD_PARAMS
+    except DatabaseException.UNIQUE_VIOLATION:
+        conn.rollback()
+        return Status.ALREADY_EXISTS
+    except DatabaseException.ConnectionInvalid:
+        conn.rollback()
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
