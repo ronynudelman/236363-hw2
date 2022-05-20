@@ -174,6 +174,47 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
         self.assertEqual(0, Solution.diskTotalRAM(2), "Should get None - there are no files on diskID 2")
 
+    def test_getCostForType(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=92, cost=20)
+        file1 = File(fileID=1, type="jpg", size=20)
+        file2 = File(fileID=2, type="jpg", size=50)
+        file3 = File(fileID=3, type="word", size=5)
+        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file2, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file3, diskID=2), "Should work")
+
+        self.assertEqual(10 * 20 + 20 * 50, Solution.getCostForType("jpg"), "Should work")
+        self.assertEqual(20 * 5, Solution.getCostForType("word"), "Should work")
+        self.assertEqual(0, Solution.getCostForType("pdf"), "There are no pdf files!")
+
+    def test_getFilesCanBeAddedToDisk(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
+        file1 = File(fileID=1, type="jpg", size=20)
+        file2 = File(fileID=2, type="jpg", size=50)
+        file3 = File(fileID=3, type="word", size=5)
+        file4 = File(fileID=4, type="word", size=5)
+        file5 = File(fileID=5, type="word", size=53)
+        file6 = File(fileID=6, type="word", size=52)
+        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file4), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
+
+        self.assertEqual([1, 2, 3, 4, 5], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
+        self.assertEqual([1, 3, 4], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':

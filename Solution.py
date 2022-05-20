@@ -429,6 +429,7 @@ def averageFileSizeOnDisk(diskID: int) -> float:
         conn = Connector.DBConnector()
         files_on_disk = f"SELECT file_id FROM FilesInDisks WHERE disk_id = {diskID}"
         rows_affected, result = conn.execute(f"SELECT AVG(size) FROM Files WHERE file_id IN ({files_on_disk})")
+        conn.commit()
     except DatabaseException:
         return -1.0
     finally:
@@ -447,6 +448,7 @@ def diskTotalRAM(diskID: int) -> int:
         conn = Connector.DBConnector()
         ram_on_disk = f"SELECT ram_id FROM RAMsInDisks WHERE disk_id = {diskID}"
         rows_affected, result = conn.execute(f"SELECT SUM(size) FROM RAMs WHERE ram_id IN ({ram_on_disk})")
+        conn.commit()
     except DatabaseException:
         return -1
     finally:
@@ -460,11 +462,51 @@ def diskTotalRAM(diskID: int) -> int:
 
 
 def getCostForType(type: str) -> int:
-    return 0
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_affected, result = conn.execute(f"SELECT SUM(F.size * D.cost) "
+                                             f"FROM Files F, Disks D, FilesInDisks FD "
+                                             f"WHERE "
+                                             f"F.type = '{type}' "
+                                             f"AND "
+                                             f"F.file_id = FD.file_id "
+                                             f"AND "
+                                             f"D.disk_id = FD.disk_id"
+                                             f";")
+        conn.commit()
+    except DatabaseException:
+        return -1
+    finally:
+        if conn:
+            conn.close()
+    assert result.size() == 1
+    row = result[0]
+    if row['sum'] is None:
+        return 0
+    return row['sum']
 
 
 def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
-    return []
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        disk_size = f"SELECT free_space FROM Disks WHERE disk_id = {diskID}"
+        rows_affected, result = conn.execute(f"SELECT file_id FROM Files WHERE size <= ({disk_size}) "
+                                             f"ORDER BY file_id ASC "
+                                             f"LIMIT 5"
+                                             f";")
+        conn.commit()
+    except DatabaseException:
+        return []
+    finally:
+        if conn:
+            conn.close()
+    list_res = []
+    for i in range(result.size()):
+        row = result[i]
+        list_res.append(row['file_id'])
+    return list_res
 
 
 def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
