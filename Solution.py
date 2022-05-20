@@ -50,13 +50,15 @@ def createTables():
                                         "file_id INTEGER, " \
                                         "disk_id INTEGER, " \
                                         "FOREIGN KEY (file_id) REFERENCES Files(file_id) ON DELETE CASCADE, " \
-                                        "FOREIGN KEY (disk_id) REFERENCES Disks(disk_id) ON DELETE CASCADE" \
+                                        "FOREIGN KEY (disk_id) REFERENCES Disks(disk_id) ON DELETE CASCADE, " \
+                                        "UNIQUE (file_id, disk_id)" \
                                         ");"
     create_rams_in_disks_table_query = "CREATE TABLE RAMsInDisks (" \
                                        "ram_id INTEGER, " \
                                        "disk_id INTEGER, " \
                                        "FOREIGN KEY (ram_id) REFERENCES RAMs(ram_id) ON DELETE CASCADE, " \
-                                       "FOREIGN KEY (disk_id) REFERENCES Disks(disk_id) ON DELETE CASCADE" \
+                                       "FOREIGN KEY (disk_id) REFERENCES Disks(disk_id) ON DELETE CASCADE, " \
+                                       "UNIQUE (ram_id, disk_id)" \
                                        ");"
     conn = None
     try:
@@ -325,6 +327,34 @@ def addDiskAndFile(disk: Disk, file: File) -> Status:
 
 
 def addFileToDisk(file: File, diskID: int) -> Status:
+    insert_file_to_disk_query = f"INSERT INTO FilesInDisks VALUES ({file.getFileID()}, {diskID});"
+    update_free_space_query = f"UPDATE Disks " \
+                              f"SET free_space = free_space - {file.getSize()} " \
+                              f"WHERE disk_id = {diskID}" \
+                              f";"
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        query = sql.SQL(f"BEGIN; "
+                        f"{insert_file_to_disk_query} "
+                        f"{update_free_space_query} "
+                        f"COMMIT;")
+        conn.execute(query)
+    except DatabaseException.FOREIGN_KEY_VIOLATION:
+        conn.rollback()
+        return Status.NOT_EXISTS
+    except DatabaseException.UNIQUE_VIOLATION:
+        conn.rollback()
+        return Status.ALREADY_EXISTS
+    except DatabaseException.CHECK_VIOLATION:
+        conn.rollback()
+        return Status.BAD_PARAMS
+    except DatabaseException.ConnectionInvalid:
+        conn.rollback()
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 

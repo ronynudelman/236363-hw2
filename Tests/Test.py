@@ -109,6 +109,23 @@ class Test(AbstractTest):
         disk = Solution.getDiskByID(11)
         assert disk.getDiskID() is None
 
+    def test_add_file_to_disk(self) -> None:
+        disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
+        file = File(fileID=8, type="jpg", size=50)
+        self.assertEqual(Status.OK, Solution.addDiskAndFile(disk=disk, file=file),
+                         "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file, diskID=1),
+                         "Should work")
+        self.assertEqual(Status.ALREADY_EXISTS, Solution.addFileToDisk(file=file, diskID=1),
+                         "Disk and file already exist")
+        file = File(fileID=10, type="jpg", size=5000)
+        self.assertEqual(Status.OK, Solution.addFile(file), "Should work")
+        self.assertEqual(Status.BAD_PARAMS, Solution.addFileToDisk(file=file, diskID=1),
+                         "File is too big")
+        file = File(fileID=99, type="jpg", size=10)
+        self.assertEqual(Status.NOT_EXISTS, Solution.addFileToDisk(file=file, diskID=1),
+                         "File does not exist")
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':
