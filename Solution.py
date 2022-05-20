@@ -156,19 +156,36 @@ def getFileByID(fileID: int) -> File:
         conn = Connector.DBConnector()
         rows_effected, result = conn.execute(f"SELECT * FROM Files WHERE file_id = {fileID};")
         conn.commit()
-    except Exception:
+    except DatabaseException:
         return File.badFile()
     finally:
         if conn:
             conn.close()
     if not result.isEmpty():
-        assert(rows_effected == 1)
+        assert rows_effected == 1
         row = result[0]
         return File(row["file_id"], row["type"], row["size"])
     return File.badFile()
 
 
 def deleteFile(file: File) -> Status:
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        conn.execute(f"DELETE FROM Files "
+                     f"WHERE "
+                     f"file_id = {file.getFileID()} "
+                     f"AND "
+                     f"type = '{file.getType()}' "
+                     f"AND "
+                     f"size = {file.getSize()}"
+                     f";")
+        conn.commit()
+    except DatabaseException:
+        return Status.ERROR
+    finally:
+        if conn:
+            conn.close()
     return Status.OK
 
 
