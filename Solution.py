@@ -170,6 +170,7 @@ def getFileByID(fileID: int) -> File:
     return File.badFile()
 
 
+# todo: make sure when a file is deleted the free space on the disk increases accordingly
 def deleteFile(file: File) -> Status:
     conn = None
     try:
@@ -534,8 +535,35 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
     return list_res
 
 
+# help:
+# select (select count(distinct status) from T)  = 1
+# SELECT @IsSameGroup = CASE WHEN COUNT(*) > 1 THEN 0 ELSE 1 END
+# FROM (SELECT Name FROM Contact GROUP BY Name) groups
+# select * from tableA
+# minus
+# select * from tableB
+
+# todo: should we add where company is not null ?
 def isCompanyExclusive(diskID: int) -> bool:
-    return True
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        disk_company = f"SELECT company FROM Disks WHERE disk_id = {diskID}"
+        rams_on_disk = f"SELECT ram_id FROM RAMsInDisks WHERE disk_id = {diskID}"
+        rams_company = f"SELECT DISTINCT company FROM RAMs WHERE ram_id IN ({rams_on_disk})"
+        split_the_diff = f"SELECT * FROM ({rams_company}) R, ({disk_company}) D WHERE ALL R.comapny EXSIS IN D.company"
+        # rows_affected, result = conn.execute(f"SELECT COUNT(DISTINCT COMPANY) FROM ({split_the_diff})")
+        rows_affected, result = conn.execute(f"{split_the_diff}")
+        conn.commit()
+    except DatabaseException:
+        return False
+    finally:
+        if conn:
+            conn.close()
+    if result[0]['count'] == 0:
+        return True
+    else:
+        return False
 
 
 def getConflictingDisks() -> List[int]:
@@ -548,4 +576,3 @@ def mostAvailableDisks() -> List[int]:
 
 def getCloseFiles(fileID: int) -> List[int]:
     return []
-
