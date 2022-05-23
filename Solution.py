@@ -515,9 +515,9 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
         conn = Connector.DBConnector()
         disk_size = f"SELECT free_space FROM Disks WHERE disk_id = {diskID}"
         rams_in_disk = f"SELECT ram_id FROM RAMsInDisks WHERE disk_id = {diskID}"
-        ram_size = f"SELECT SUM(size) FROM RAMs WHERE ram_id IN {rams_in_disk}"
+        ram_size = f"SELECT SUM(size) FROM RAMs WHERE ram_id IN ({rams_in_disk})"
         rows_affected, result = conn.execute(f"SELECT file_id FROM Files WHERE size <= ({disk_size})"
-                                             f"AND size <= {ram_size} "
+                                             f"AND size <= ({ram_size}) "
                                              f"ORDER BY file_id ASC "
                                              f"LIMIT 5"
                                              f";")
