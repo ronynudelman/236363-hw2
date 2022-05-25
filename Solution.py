@@ -170,7 +170,6 @@ def getFileByID(fileID: int) -> File:
     return File.badFile()
 
 
-# todo: make sure when a file is deleted the free space on the disk increases accordingly
 def deleteFile(file: File) -> Status:
     conn = None
     try:
@@ -535,15 +534,6 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
     return list_res
 
 
-# help:
-# select (select count(distinct status) from T)  = 1
-# SELECT @IsSameGroup = CASE WHEN COUNT(*) > 1 THEN 0 ELSE 1 END
-# FROM (SELECT Name FROM Contact GROUP BY Name) groups
-# select * from tableA
-# minus
-# select * from tableB
-
-# todo: should we add where company is not null ?
 def isCompanyExclusive(diskID: int) -> bool:
     return True
 
