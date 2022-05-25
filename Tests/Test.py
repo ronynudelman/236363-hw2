@@ -215,7 +215,7 @@ class Test(AbstractTest):
         self.assertEqual([1, 2, 3, 4, 5], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
         self.assertEqual([1, 3, 4], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
 
-     def test_getFilesCanBeAddedToDiskAndRAM(self) -> None:
+    def test_getFilesCanBeAddedToDiskAndRAM(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
         ram1 = RAM(ramID=1, company="raminc", size=25)
@@ -245,7 +245,7 @@ class Test(AbstractTest):
         self.assertEqual([1, 2, 3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=1), "Should work")
         self.assertEqual([3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=2), "Should work")
 
-     def test_isCompanyExclusive(self) -> None:
+    def test_isCompanyExclusive(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
         ram1 = RAM(ramID=1, company="disks", size=4)
@@ -276,7 +276,7 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addRAMToDisk(ramID=8, diskID=2), "Should work")
         self.assertEqual(True, Solution.isCompanyExclusive(1), "All companies are the same")
         self.assertEqual(False, Solution.isCompanyExclusive(2), "RAM with ramID=7 is of different company")
-        
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':
