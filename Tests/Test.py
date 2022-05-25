@@ -276,6 +276,7 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addRAMToDisk(ramID=8, diskID=2), "Should work")
         self.assertEqual(True, Solution.isCompanyExclusive(1), "All companies are the same")
         self.assertEqual(False, Solution.isCompanyExclusive(2), "RAM with ramID=7 is of different company")
+        self.assertEqual(False, Solution.isCompanyExclusive(42), "disk doesn't exist")
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
