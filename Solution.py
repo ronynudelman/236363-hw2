@@ -1,6 +1,5 @@
 from typing import List
 import Utility.DBConnector as Connector
-from Utility.DBConnector import ResultSet
 from Utility.Status import Status
 from Utility.Exceptions import DatabaseException
 from Business.File import File
@@ -171,19 +170,33 @@ def getFileByID(fileID: int) -> File:
 
 
 def deleteFile(file: File) -> Status:
+    file_to_delete = f"SELECT file_id " \
+                     f"FROM Files " \
+                     f"WHERE file_id = {file.getFileID()} " \
+                     f"AND " \
+                     f"type = '{file.getType()}' " \
+                     f"AND " \
+                     f"size = {file.getSize()}"
+    disks_with_file = f"SELECT disk_id " \
+                      f"FROM FilesInDisks " \
+                      f"WHERE file_id IN ({file_to_delete})"
+    update_disks_free_space_query = f"UPDATE Disks " \
+                                    f"SET free_space = free_space + {file.getSize()} " \
+                                    f"WHERE disk_id IN ({disks_with_file})" \
+                                    f";"
+    delete_file_query = f"DELETE FROM Files " \
+                        f"WHERE file_id IN ({file_to_delete})" \
+                        f";"
     conn = None
     try:
         conn = Connector.DBConnector()
-        conn.execute(f"DELETE FROM Files "
-                     f"WHERE "
-                     f"file_id = {file.getFileID()} "
-                     f"AND "
-                     f"type = '{file.getType()}' "
-                     f"AND "
-                     f"size = {file.getSize()}"
-                     f";")
-        conn.commit()
+        query = sql.SQL(f"BEGIN; "
+                        f"{update_disks_free_space_query} "
+                        f"{delete_file_query} "
+                        f"COMMIT;")
+        conn.execute(query)
     except DatabaseException:
+        conn.rollback()
         return Status.ERROR
     finally:
         if conn:
@@ -300,12 +313,12 @@ def addDiskAndFile(disk: Disk, file: File) -> Status:
     conn = None
     try:
         conn = Connector.DBConnector()
-        add_file = f"INSERT INTO Files VALUES ({file.getFileID()}, '{file.getType()}', {file.getSize()});"
-        add_disk = f"INSERT INTO Disks VALUES ({disk.getDiskID()}, '{disk.getCompany()}', " \
-                   f"{disk.getSpeed()}, {disk.getFreeSpace()}, {disk.getCost()});"
+        add_disk_query = f"INSERT INTO Disks VALUES ({disk.getDiskID()}, '{disk.getCompany()}', " \
+                         f"{disk.getSpeed()}, {disk.getFreeSpace()}, {disk.getCost()});"
+        add_file_query = f"INSERT INTO Files VALUES ({file.getFileID()}, '{file.getType()}', {file.getSize()});"
         query = sql.SQL(f"BEGIN; "
-                        f"{add_disk} "
-                        f"{add_file} "
+                        f"{add_disk_query} "
+                        f"{add_file_query} "
                         f"COMMIT;")
         conn.execute(query)
     except DatabaseException.NOT_NULL_VIOLATION:
@@ -359,12 +372,22 @@ def addFileToDisk(file: File, diskID: int) -> Status:
 
 
 def removeFileFromDisk(file: File, diskID: int) -> Status:
-    remove_file_from_disk_query = f"DELETE FROM FilesInDisks WHERE file_id = {file.getFileID()} AND disk_id = {diskID};"
+    file_to_delete = f"SELECT file_id " \
+                     f"FROM Files " \
+                     f"WHERE file_id = {file.getFileID()} " \
+                     f"AND " \
+                     f"type = '{file.getType()}' " \
+                     f"AND " \
+                     f"size = {file.getSize()}"
+    disk_with_file = f"SELECT disk_id " \
+                     f"FROM FilesInDisks " \
+                     f"WHERE disk_id = {diskID} AND file_id IN ({file_to_delete})"
     update_free_space_query = f"UPDATE Disks " \
                               f"SET free_space = free_space + {file.getSize()} " \
-                              f"WHERE disk_id = {diskID} AND EXISTS (SELECT * FROM FilesInDisks WHERE " \
-                              f"file_id = {file.getFileID()} AND disk_id = {diskID})" \
+                              f"WHERE disk_id IN ({disk_with_file})" \
                               f";"
+    remove_file_from_disk_query = f"DELETE FROM FilesInDisks WHERE " \
+                                  f"file_id IN ({file_to_delete}) AND disk_id IN ({disk_with_file});"
     conn = None
     try:
         conn = Connector.DBConnector()

@@ -129,6 +129,32 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.removeFileFromDisk(file, 1))
         self.assertEqual(Status.OK, Solution.removeFileFromDisk(file, 1))
 
+        # test if deleting file also frees space on disk
+        file2 = File(fileID=555, type="pdf", size=100)
+        disk2 = Disk(diskID=987, company="disks", speed=12, free_space=140, cost=130)
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        disk2_test = Solution.getDiskByID(diskID=987)
+        assert disk2_test.getFreeSpace() == 140
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file2, diskID=987), "Should work")
+        disk2_test = Solution.getDiskByID(diskID=987)
+        assert disk2_test.getFreeSpace() == 40
+        self.assertEqual(Status.OK, Solution.deleteFile(file=file2), "Should work")
+        disk2_test = Solution.getDiskByID(diskID=987)
+        assert disk2_test.getFreeSpace() == 140, "We should get the space back"
+
+        # test deleting file from disk where the file has the same id of an existing file on this disk
+        # but with different size and type actually.
+        # no changes should be made!
+        file3 = File(fileID=234, type="pdf", size=100)
+        disk3 = Disk(diskID=345, company="disks", speed=12, free_space=190, cost=130)
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file3, diskID=345), "Should work")
+        self.assertEqual(Status.OK, Solution.removeFileFromDisk(file=File(fileID=234, type="pdf", size=98), diskID=345))
+        disk3_test = Solution.getDiskByID(diskID=345)
+        assert disk3_test.getFreeSpace() == 90, "The file should stay on the disk"
+
     def test_rams_on_disks(self) -> None:
         disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
         ram = RAM(ramID=1, company="ramox", size=500)
