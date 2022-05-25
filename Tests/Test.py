@@ -304,6 +304,108 @@ class Test(AbstractTest):
         self.assertEqual(False, Solution.isCompanyExclusive(2), "RAM with ramID=7 is of different company")
         self.assertEqual(False, Solution.isCompanyExclusive(42), "disk doesn't exist")
 
+    def test_getConflictingDisks(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=500, cost=20)
+        disk3 = Disk(diskID=3, company="disks", speed=10, free_space=500, cost=20)
+        file1 = File(fileID=1, type="jpg", size=20)
+        file2 = File(fileID=2, type="jpg", size=50)
+        file3 = File(fileID=3, type="word", size=5)
+        file4 = File(fileID=4, type="word", size=5)
+        file5 = File(fileID=5, type="word", size=53)
+        file6 = File(fileID=6, type="word", size=52)
+        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file4), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file2, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file3, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file4, diskID=3), "Should work")
+        self.assertEqual([1, 2], Solution.getConflictingDisks(), "this should return just the second disk")
+
+    def test_mostAvailableDisks(self) -> None:
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=1,
+                                                          company="disks",
+                                                          speed=10,
+                                                          free_space=50,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=2,
+                                                          company="disks",
+                                                          speed=10,
+                                                          free_space=50,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=3,
+                                                          company="disks",
+                                                          speed=55,
+                                                          free_space=50,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=4,
+                                                          company="disks",
+                                                          speed=55,
+                                                          free_space=50,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=5,
+                                                          company="disks",
+                                                          speed=10,
+                                                          free_space=15,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=6,
+                                                          company="disks",
+                                                          speed=10,
+                                                          free_space=15,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=7,
+                                                          company="disks",
+                                                          speed=20,
+                                                          free_space=15,
+                                                          cost=50)))
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=8,
+                                                          company="disks",
+                                                          speed=20,
+                                                          free_space=1500,
+                                                          cost=50)))
+        # full list: [8, 3, 4, 1, 2, 7, 5, 6]
+        # top 5 list: [8, 3, 4, 1, 2]
+        self.assertEqual([8, 3, 4, 1, 2], Solution.mostAvailableDisks(), "Should work")
+
+    def test_mostAvailableDisks(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=500, cost=20)
+        disk3 = Disk(diskID=3, company="disks", speed=10, free_space=500, cost=20)
+        disk4 = Disk(diskID=4, company="disks", speed=10, free_space=500, cost=20)
+        file1 = File(fileID=1, type="jpg", size=20)
+        file2 = File(fileID=2, type="jpg", size=50)
+        file3 = File(fileID=3, type="word", size=5)
+        file4 = File(fileID=4, type="word", size=5)
+        file5 = File(fileID=5, type="word", size=53)
+        file6 = File(fileID=6, type="word", size=52)
+        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk3), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk4), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file4), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file2, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file3, diskID=2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file4, diskID=3), "Should work")
+        self.assertEqual([2, 3], Solution.getCloseFiles(1), "this should return [2,3]")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=3), "Should work")
+        self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=4), "Should work")
+        self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':

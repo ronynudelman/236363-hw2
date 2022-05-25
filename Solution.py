@@ -556,6 +556,7 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
         list_res.append(row['file_id'])
     return list_res
 
+
 # TODO: Need to check if this way is legit
 # TODO: There is an option to add another attr to Disks: company_exclusive
 # TODO: which is complicated to implement but legal
@@ -584,12 +585,71 @@ def isCompanyExclusive(diskID: int) -> bool:
 
 
 def getConflictingDisks() -> List[int]:
-    return []
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_affected, result = conn.execute(f"SELECT DISTINCT FD1.disk_id AS disk_id " \
+                                             f"FROM FilesInDisks FD1, FilesInDisks FD2 " \
+                                             f"WHERE FD1.disk_id <> FD2.disk_id " \
+                                             f"AND FD1.file_id = FD2.file_id " \
+                                             f"ORDER BY FD1.disk_id ASC;")
+        conn.commit()
+    except DatabaseException:
+        return []
+    finally:
+        if conn:
+            conn.close()
+    list_res = []
+    for i in range(result.size()):
+        row = result[i]
+        list_res.append(row['disk_id'])
+    return list_res
 
 
 def mostAvailableDisks() -> List[int]:
-    return []
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_affected, result = conn.execute(f"SELECT disk_id FROM Disks " \
+                                             f"ORDER BY free_space DESC, speed DESC, disk_id ASC " \
+                                             f"LIMIT 5" \
+                                             f";")
+        conn.commit()
+    except DatabaseException:
+        return []
+    finally:
+        if conn:
+            conn.close()
+    list_res = []
+    for i in range(result.size()):
+        row = result[i]
+        list_res.append(row['disk_id'])
+    return list_res
 
 
 def getCloseFiles(fileID: int) -> List[int]:
-    return []
+    disks_counter = f"SELECT COUNT(disk_id) FROM FilesInDisks WHERE file_id = {fileID}"
+    disks_with_file_id = f"SELECT disk_id FROM FilesInDisks WHERE file_id = {fileID}"
+    query = f"SELECT file_id " \
+            f"FROM FilesInDisks " \
+            f"WHERE file_id <> {fileID} AND disk_id IN ({disks_with_file_id}) " \
+            f"GROUP BY file_id " \
+            f"HAVING COUNT(*) >= ({disks_counter}) / 2.0 " \
+            f"ORDER BY file_id ASC " \
+            f"LIMIT 10" \
+            f";"
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_affected, result = conn.execute(query)
+        conn.commit()
+    except DatabaseException:
+        return []
+    finally:
+        if conn:
+            conn.close()
+    list_res = []
+    for i in range(result.size()):
+        row = result[i]
+        list_res.append(row['file_id'])
+    return list_res
