@@ -215,7 +215,37 @@ class Test(AbstractTest):
         self.assertEqual([1, 2, 3, 4, 5], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
         self.assertEqual([1, 3, 4], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
 
-    def test_isCompanyExclusive(self) -> None:
+     def test_getFilesCanBeAddedToDiskAndRAM(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
+        ram1 = RAM(ramID=1, company="raminc", size=25)
+        ram2 = RAM(ramID=2, company="raminc", size=25)
+        ram3 = RAM(ramID=3, company="raminc", size=5)
+        file1 = File(fileID=1, type="jpg", size=20)
+        file2 = File(fileID=2, type="jpg", size=50)
+        file3 = File(fileID=3, type="word", size=5)
+        file4 = File(fileID=4, type="word", size=5)
+        file5 = File(fileID=5, type="word", size=53)
+        file6 = File(fileID=6, type="word", size=52)
+        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file1), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file2), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file3), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file4), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAM(ram1), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAM(ram2), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAM(ram3), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAMToDisk(1, 1), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAMToDisk(2, 1), "Should work")
+        self.assertEqual(Status.OK, Solution.addRAMToDisk(3, 2), "Should work")
+
+        self.assertEqual([1, 2, 3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=1), "Should work")
+        self.assertEqual([3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=2), "Should work")
+
+     def test_isCompanyExclusive(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
         ram1 = RAM(ramID=1, company="disks", size=4)
@@ -246,7 +276,7 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addRAMToDisk(ramID=8, diskID=2), "Should work")
         self.assertEqual(True, Solution.isCompanyExclusive(1), "All companies are the same")
         self.assertEqual(False, Solution.isCompanyExclusive(2), "RAM with ramID=7 is of different company")
-
+        
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':
