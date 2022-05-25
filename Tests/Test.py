@@ -245,26 +245,6 @@ class Test(AbstractTest):
         self.assertEqual([1, 2, 3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=1), "Should work")
         self.assertEqual([3, 4], Solution.getFilesCanBeAddedToDiskAndRAM(diskID=2), "Should work")
 
-    def test_isCompanyExclusive(self) -> None:
-        disk1 = Disk(diskID=1, company="raminc", speed=10, free_space=92, cost=10)
-        disk2 = Disk(diskID=2, company="disks", speed=10, free_space=20, cost=20)
-        ram1 = RAM(ramID=1, company="raminc", size=25)
-        ram2 = RAM(ramID=2, company="raminc", size=25)
-        ram3 = RAM(ramID=3, company="raminc", size=5)
-        self.assertEqual(Status.OK, Solution.addDisk(disk1), "Should work")
-        self.assertEqual(Status.OK, Solution.addDisk(disk2), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAM(ram1), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAM(ram2), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAM(ram3), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAMToDisk(1, 1), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAMToDisk(2, 1), "Should work")
-        self.assertEqual(Status.OK, Solution.addRAMToDisk(3, 2), "Should work")
-
-        self.assertEqual(True, Solution.isCompanyExclusive(1))
-        self.assertEqual(False, Solution.isCompanyExclusive(2))
-
-
-
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':
