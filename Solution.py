@@ -512,7 +512,9 @@ def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
 def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
     return []
 
-
+# TODO: Need to check if this way is legit
+# TODO: There is an option to add another attr to Disks: company_exclusive
+# TODO: which is complicated to implement but legal
 def isCompanyExclusive(diskID: int) -> bool:
     rams_on_disk = f"SELECT ram_id " \
                    f"FROM RAMsInDisks " \
