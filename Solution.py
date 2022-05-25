@@ -15,6 +15,8 @@ from psycopg2 import sql
 # FilesInDisks: file_id, disk_id
 # RAMsInDisks: ram_id, disk_id
 
+#TODO: fix sql literal
+#TODO: check moodle for edge cases
 
 def createTables():
     create_files_table_query = "CREATE TABLE Files (" \
@@ -558,8 +560,8 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
 
 
 # TODO: Need to check if this way is legit
-# TODO: There is an option to add another attr to Disks: company_exclusive
-# TODO: which is complicated to implement but legal
+#  There is an option to add another attr to Disks: company_exclusive
+#  which is complicated to implement but legal
 def isCompanyExclusive(diskID: int) -> bool:
     rams_on_disk = f"SELECT ram_id " \
                    f"FROM RAMsInDisks " \
