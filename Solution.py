@@ -533,9 +533,31 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
         list_res.append(row['file_id'])
     return list_res
 
-
+# TODO: Need to check if this way is legit
+# TODO: There is an option to add another attr to Disks: company_exclusive
+# TODO: which is complicated to implement but legal
 def isCompanyExclusive(diskID: int) -> bool:
-    return True
+    rams_on_disk = f"SELECT ram_id " \
+                   f"FROM RAMsInDisks " \
+                   f"WHERE disk_id = {diskID}"
+    rams_companies = f"SELECT DISTINCT company " \
+                     f"FROM RAMs " \
+                     f"WHERE ram_id IN ({rams_on_disk})"
+    exclusive_comp = f"SELECT disk_id " \
+                     f"FROM Disks " \
+                     f"WHERE disk_id = {diskID} AND company =ALL ({rams_companies})" \
+                     f";"
+    conn = None
+    try:
+        conn = Connector.DBConnector()
+        rows_affected, result = conn.execute(f"{exclusive_comp}")
+        conn.commit()
+    except DatabaseException:
+        return False
+    finally:
+        if conn:
+            conn.close()
+    return not result.isEmpty()
 
 
 def getConflictingDisks() -> List[int]:
