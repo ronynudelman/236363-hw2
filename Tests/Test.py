@@ -190,6 +190,19 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
         self.assertEqual(0.0, Solution.averageFileSizeOnDisk(2), "Should get None - there are no files on diskID 2")
 
+        self.assertEqual(Status.OK, Solution.addFile(File(67, "jpg", 1)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(68, "jpg", 2)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(69, "jpg", 3)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(70, "jpg", 4)), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=97, company="plm",
+                                                          speed=543, free_space=9876, cost=10)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(67, "jpg", 1), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(68, "jpg", 2), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(69, "jpg", 3), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(70, "jpg", 4), diskID=97), "Should work")
+        self.assertEqual(2.5, Solution.averageFileSizeOnDisk(97), "Should work")
+
+
     def test_diskTotalRAM(self) -> None:
         disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
         self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
