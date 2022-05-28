@@ -375,7 +375,7 @@ class Test(AbstractTest):
         # top 5 list: [8, 3, 4, 1, 2]
         self.assertEqual([8, 3, 4, 1, 2], Solution.mostAvailableDisks(), "Should work")
 
-    def test_mostAvailableDisks(self) -> None:
+    def test_getCloseFiles(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=500, cost=20)
         disk3 = Disk(diskID=3, company="disks", speed=10, free_space=500, cost=20)
