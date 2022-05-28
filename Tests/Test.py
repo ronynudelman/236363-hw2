@@ -22,6 +22,8 @@ class Test(AbstractTest):
                          "ID 2 already exists")
         self.assertEqual(Status.BAD_PARAMS, Solution.addFile(File(fileID=1, type="pdf", size=-7)),
                          "Size is negative")
+        self.assertEqual(Status.BAD_PARAMS, Solution.addFile(File(fileID=1, type=None, size=10)),
+                         "Type is None")
         file = Solution.getFileByID(fileID=3)
         assert file.getFileID() == 3
         assert file.getType() == "pdf"
@@ -144,7 +146,7 @@ class Test(AbstractTest):
         assert disk2_test.getFreeSpace() == 140, "We should get the space back"
 
         # test deleting file from disk where the file has the same id of an existing file on this disk
-        # but with different size and type actually.
+        # but with different size and type.
         # no changes should be made!
         file3 = File(fileID=234, type="pdf", size=100)
         disk3 = Disk(diskID=345, company="disks", speed=12, free_space=190, cost=130)
@@ -376,7 +378,7 @@ class Test(AbstractTest):
         self.assertEqual([8, 3, 4, 1, 2], Solution.mostAvailableDisks(), "Should work")
 
     def test_getCloseFiles(self) -> None:
-        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=962, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=500, cost=20)
         disk3 = Disk(diskID=3, company="disks", speed=10, free_space=500, cost=20)
         disk4 = Disk(diskID=4, company="disks", speed=10, free_space=500, cost=20)
@@ -406,6 +408,12 @@ class Test(AbstractTest):
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
         self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=4), "Should work")
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
+        self.assertEqual([1, 2, 3, 4, 5, 6], Solution.getCloseFiles(999),
+                         "all the files should be return - file_id 999 does not exist")
+        self.assertEqual(Status.OK, Solution.addFile(File(fileID=888, type='word', size=43)), "Should work")
+        self.assertEqual([1, 2, 3, 4, 5, 6], Solution.getCloseFiles(888),
+                         "all the files should be return - file_id 888 is not saved on any disk")
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':

@@ -691,14 +691,17 @@ def mostAvailableDisks() -> List[int]:
 def getCloseFiles(fileID: int) -> List[int]:
     disks_counter = "SELECT COUNT(disk_id) FROM FilesInDisks WHERE file_id = {file_id}"
     disks_with_file_id = "SELECT disk_id FROM FilesInDisks WHERE file_id = {file_id}"
-    close_files_query = "SELECT file_id " \
-                        "FROM FilesInDisks " \
-                        "WHERE file_id <> {file_id} AND disk_id IN " + f"({disks_with_file_id}) " + \
-                        "GROUP BY file_id " \
-                        "HAVING COUNT(*) >= " + f"({disks_counter}) " + "/ 2.0 " \
-                        "ORDER BY file_id ASC " \
-                        "LIMIT 10" \
-                        ";"
+    close_files_aux = "SELECT file_id " \
+                      "FROM FilesInDisks " \
+                      "WHERE file_id <> {file_id} AND disk_id IN " + f"({disks_with_file_id}) " + \
+                      "GROUP BY file_id " \
+                      "HAVING COUNT(*) >= " + f"({disks_counter}) " + "/ 2.0 " \
+                      "ORDER BY file_id ASC " \
+                      "LIMIT 10"
+    close_files_query = f"SELECT file_id " \
+                        f"FROM Files " \
+                        f"WHERE (file_id IN ({close_files_aux})) " \
+                        f"OR ((0 = ({disks_counter})) " + "AND file_id <> {file_id})"
     conn = None
     try:
         conn = Connector.DBConnector()
