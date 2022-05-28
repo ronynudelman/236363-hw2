@@ -39,8 +39,8 @@ def createTables():
                                ");"
     create_ram_table_query = "CREATE TABLE RAMs (" \
                              "ram_id INTEGER, " \
-                             "size INTEGER NOT NULL, " \
                              "company TEXT NOT NULL, " \
+                             "size INTEGER NOT NULL, " \
                              "PRIMARY KEY (ram_id), " \
                              "CHECK (ram_id > 0), " \
                              "CHECK (size > 0)" \
@@ -70,7 +70,7 @@ def createTables():
                         f"{create_rams_in_disks_table_query} "
                         f"COMMIT;").format()
         conn.execute(query)
-    except DatabaseException:
+    except:
         conn.rollback()
         return Status.ERROR
     finally:
@@ -96,7 +96,7 @@ def clearTables():
                         f"{clear_ram_table_query} "
                         f"COMMIT;").format()
         conn.execute(query)
-    except DatabaseException:
+    except:
         conn.rollback()
         return Status.ERROR
     finally:
@@ -122,7 +122,7 @@ def dropTables():
                         f"{drop_ram_table_query} "
                         f"COMMIT;").format()
         conn.execute(query)
-    except DatabaseException:
+    except:
         conn.rollback()
         return Status.ERROR
     finally:
@@ -149,6 +149,8 @@ def addFile(file: File) -> Status:
         return Status.ALREADY_EXISTS
     except DatabaseException.ConnectionInvalid:
         return Status.ERROR
+    except:
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -164,6 +166,8 @@ def getFileByID(fileID: int) -> File:
         rows_effected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return File.badFile()
+    except:
         return File.badFile()
     finally:
         if conn:
@@ -203,6 +207,9 @@ def deleteFile(file: File) -> Status:
     except DatabaseException:
         conn.rollback()
         return Status.ERROR
+    except:
+        conn.rollback()
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -229,6 +236,8 @@ def addDisk(disk: Disk) -> Status:
         return Status.ALREADY_EXISTS
     except DatabaseException.ConnectionInvalid:
         return Status.ERROR
+    except Exception:
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -244,6 +253,8 @@ def getDiskByID(diskID: int) -> Disk:
         rows_effected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return Disk.badDisk()
+    except:
         return Disk.badDisk()
     finally:
         if conn:
@@ -261,24 +272,28 @@ def deleteDisk(diskID: int) -> Status:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(delete_disk_query).format(id=sql.Literal(diskID))
-        conn.execute(query)
+        rows_effected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return Status.ERROR
+    except:
         return Status.ERROR
     finally:
         if conn:
             conn.close()
+    if rows_effected == 0:
+        return Status.NOT_EXISTS
     return Status.OK
 
 
 def addRAM(ram: RAM) -> Status:
-    add_ram_query = "INSERT INTO RAMs VALUES ({id}, {size}, {company});"
+    add_ram_query = "INSERT INTO RAMs VALUES ({id}, {company}, {size});"
     conn = None
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(add_ram_query).format(id=sql.Literal(ram.getRamID()),
-                                              size=sql.Literal(ram.getSize()),
-                                              company=sql.Literal(ram.getCompany()))
+                                              company=sql.Literal(ram.getCompany()),
+                                              size=sql.Literal(ram.getSize()))
         conn.execute(query)
         conn.commit()
     except DatabaseException.NOT_NULL_VIOLATION:
@@ -288,6 +303,8 @@ def addRAM(ram: RAM) -> Status:
     except DatabaseException.UNIQUE_VIOLATION:
         return Status.ALREADY_EXISTS
     except DatabaseException.ConnectionInvalid:
+        return Status.ERROR
+    except:
         return Status.ERROR
     finally:
         if conn:
@@ -305,13 +322,15 @@ def getRAMByID(ramID: int) -> RAM:
         conn.commit()
     except DatabaseException:
         return RAM.badRAM()
+    except:
+        return RAM.badRAM()
     finally:
         if conn:
             conn.close()
     if not result.isEmpty():
         assert rows_effected == 1
         row = result[0]
-        return RAM(row["ram_id"], row["size"], row["company"])
+        return RAM(row["ram_id"], row["company"], row["size"])
     return RAM.badRAM()
 
 
@@ -321,13 +340,17 @@ def deleteRAM(ramID: int) -> Status:
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(delete_ram_query).format(id=sql.Literal(ramID))
-        conn.execute(query)
+        rows_effected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return Status.ERROR
+    except:
         return Status.ERROR
     finally:
         if conn:
             conn.close()
+    if rows_effected == 0:
+        return Status.NOT_EXISTS
     return Status.OK
 
 
@@ -372,6 +395,9 @@ def addDiskAndFile(disk: Disk, file: File) -> Status:
     except DatabaseException.ConnectionInvalid:
         conn.rollback()
         return Status.ERROR
+    except:
+        conn.rollback()
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -404,6 +430,9 @@ def addFileToDisk(file: File, diskID: int) -> Status:
         conn.rollback()
         return Status.BAD_PARAMS
     except DatabaseException.ConnectionInvalid:
+        conn.rollback()
+        return Status.ERROR
+    except:
         conn.rollback()
         return Status.ERROR
     finally:
@@ -442,6 +471,9 @@ def removeFileFromDisk(file: File, diskID: int) -> Status:
     except DatabaseException:
         conn.rollback()
         return Status.ERROR
+    except:
+        conn.rollback()
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -467,6 +499,9 @@ def addRAMToDisk(ramID: int, diskID: int) -> Status:
     except DatabaseException.ConnectionInvalid:
         conn.rollback()
         return Status.ERROR
+    except:
+        conn.rollback()
+        return Status.ERROR
     finally:
         if conn:
             conn.close()
@@ -483,6 +518,9 @@ def removeRAMFromDisk(ramID: int, diskID: int) -> Status:
         rows_effected, _ = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        conn.rollback()
+        return Status.ERROR
+    except:
         conn.rollback()
         return Status.ERROR
     finally:
@@ -504,6 +542,8 @@ def averageFileSizeOnDisk(diskID: int) -> float:
         conn.commit()
     except DatabaseException:
         return -1.0
+    except:
+        return -1.0
     finally:
         if conn:
             conn.close()
@@ -511,7 +551,7 @@ def averageFileSizeOnDisk(diskID: int) -> float:
     row = result[0]
     if row['avg'] is None:
         return 0.0
-    return row['avg']
+    return float(row['avg'])
 
 
 def diskTotalRAM(diskID: int) -> int:
@@ -524,6 +564,8 @@ def diskTotalRAM(diskID: int) -> int:
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return -1
+    except:
         return -1
     finally:
         if conn:
@@ -553,6 +595,8 @@ def getCostForType(type: str) -> int:
         conn.commit()
     except DatabaseException:
         return -1
+    except:
+        return -1
     finally:
         if conn:
             conn.close()
@@ -568,7 +612,7 @@ def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
     get_files_query = f"SELECT file_id " \
                       f"FROM Files " \
                       f"WHERE size <= ({disk_size}) " \
-                      f"ORDER BY file_id ASC " \
+                      f"ORDER BY file_id DESC " \
                       f"LIMIT 5" \
                       f";"
     conn = None
@@ -578,6 +622,8 @@ def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return []
+    except:
         return []
     finally:
         if conn:
@@ -590,11 +636,12 @@ def getFilesCanBeAddedToDisk(diskID: int) -> List[int]:
 
 
 def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
-    disk_size = "SELECT free_space FROM Disks WHERE disk_id = {disk_id}"
+    disk_free_space = "SELECT free_space FROM Disks WHERE disk_id = {disk_id}"
     rams_in_disk = "SELECT ram_id FROM RAMsInDisks WHERE disk_id = {disk_id}"
     ram_size = f"SELECT SUM(size) FROM RAMs WHERE ram_id IN ({rams_in_disk})"
-    get_files_query = f"SELECT file_id FROM Files WHERE size <= ({disk_size})" \
-                      f"AND size <= ({ram_size}) " \
+    get_files_query = f"SELECT file_id FROM Files WHERE EXISTS ({disk_free_space}) " \
+                      f"AND size <= ({disk_free_space})" \
+                      f"AND ((NOT EXISTS ({rams_in_disk}) AND (size = 0)) OR size <= ({ram_size}))" \
                       f"ORDER BY file_id ASC " \
                       f"LIMIT 5" \
                       f";"
@@ -605,6 +652,8 @@ def getFilesCanBeAddedToDiskAndRAM(diskID: int) -> List[int]:
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return []
+    except:
         return []
     finally:
         if conn:
@@ -635,6 +684,8 @@ def isCompanyExclusive(diskID: int) -> bool:
         conn.commit()
     except DatabaseException:
         return False
+    except:
+        return False
     finally:
         if conn:
             conn.close()
@@ -655,6 +706,8 @@ def getConflictingDisks() -> List[int]:
         conn.commit()
     except DatabaseException:
         return []
+    except:
+        return []
     finally:
         if conn:
             conn.close()
@@ -665,11 +718,19 @@ def getConflictingDisks() -> List[int]:
     return list_res
 
 
+# TODO: bug fix. we need to consider the number of files and not only the free space on the disks
 def mostAvailableDisks() -> List[int]:
-    most_avail_disks_query = f"SELECT disk_id FROM Disks " \
-                             f"ORDER BY free_space DESC, speed DESC, disk_id ASC " \
+    most_avail_disks_query = f"SELECT D.disk_id AS disk_id " \
+                             f"FROM Files F, Disks D " \
+                             f"WHERE F.size <= D.free_space " \
+                             f"GROUP BY D.disk_id " \
+                             f"ORDER BY COUNT(D.disk_id) DESC, D.speed DESC, D.disk_id ASC " \
                              f"LIMIT 5" \
                              f";"
+    # most_avail_disks_query = f"SELECT disk_id FROM Disks " \
+    #                          f"ORDER BY free_space DESC, speed DESC, disk_id ASC " \
+    #                          f"LIMIT 5" \
+    #                          f";"
     conn = None
     try:
         conn = Connector.DBConnector()
@@ -677,6 +738,8 @@ def mostAvailableDisks() -> List[int]:
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return []
+    except:
         return []
     finally:
         if conn:
@@ -701,7 +764,10 @@ def getCloseFiles(fileID: int) -> List[int]:
     close_files_query = f"SELECT file_id " \
                         f"FROM Files " \
                         f"WHERE (file_id IN ({close_files_aux})) " \
-                        f"OR ((0 = ({disks_counter})) " + "AND file_id <> {file_id})"
+                        f"OR ((0 = ({disks_counter})) " + "AND file_id <> {file_id})" \
+                        "ORDER BY file_id ASC " \
+                        "LIMIT 10 " \
+                        ";"
     conn = None
     try:
         conn = Connector.DBConnector()
@@ -709,6 +775,8 @@ def getCloseFiles(fileID: int) -> List[int]:
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
+        return []
+    except:
         return []
     finally:
         if conn:
