@@ -718,23 +718,23 @@ def getConflictingDisks() -> List[int]:
     return list_res
 
 
-# TODO: bug fix. we need to consider the number of files and not only the free space on the disks
 def mostAvailableDisks() -> List[int]:
-    most_avail_disks_query = f"SELECT D.disk_id AS disk_id " \
-                             f"FROM Files F, Disks D " \
-                             f"WHERE F.size <= D.free_space " \
-                             f"GROUP BY D.disk_id " \
-                             f"ORDER BY COUNT(D.disk_id) DESC, D.speed DESC, D.disk_id ASC " \
-                             f"LIMIT 5" \
-                             f";"
-    # most_avail_disks_query = f"SELECT disk_id FROM Disks " \
-    #                          f"ORDER BY free_space DESC, speed DESC, disk_id ASC " \
-    #                          f"LIMIT 5" \
-    #                          f";"
+    number_of_files = "SELECT COUNT(*) FROM Files"
+    min_size_file = "SELECT COALESCE(MIN(size), 0) FROM Files"
+    disks_with_at_least_one_file = "SELECT D.disk_id AS disk_id, D.speed AS speed, COUNT(D.disk_id) AS counter " \
+                                   "FROM Files F, Disks D " \
+                                   "WHERE F.size <= D.free_space AND D.free_space >= 1" \
+                                   "GROUP BY D.disk_id, D.speed"
+    disks_with_zero_files = f"SELECT disk_id, speed, 0 AS counter " \
+                            f"FROM Disks " \
+                            f"WHERE free_space < ({min_size_file}) OR free_space = 0 OR 0 = ({number_of_files})"
+    available_disks_query = f"({disks_with_at_least_one_file}) UNION ({disks_with_zero_files}) " \
+                            f"ORDER BY counter DESC, speed DESC, disk_id ASC " \
+                            f"LIMIT 5"
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL(most_avail_disks_query).format()
+        query = sql.SQL(available_disks_query).format()
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
