@@ -179,30 +179,22 @@ def getFileByID(fileID: int) -> File:
 
 
 def deleteFile(file: File) -> Status:
-    file_to_delete = "SELECT file_id " \
-                     "FROM Files " \
-                     "WHERE file_id = {id} " \
-                     "AND " \
-                     "type = {type} " \
-                     "AND " \
-                     "size = {size}"
     disks_with_file = "SELECT disk_id " \
-                      "FROM FilesInDisks " + \
-                      f"WHERE file_id IN ({file_to_delete})"
+                      "FROM FilesInDisks " \
+                      "WHERE file_id = {file_id}"
     update_disks_free_space_query = "UPDATE Disks " \
-                                    "SET free_space = free_space + {size} " + \
+                                    "SET free_space = free_space + {file_size} " + \
                                     f"WHERE disk_id IN ({disks_with_file})"
-    delete_file_query = "DELETE FROM Files " + \
-                        f"WHERE file_id IN ({file_to_delete})"
+    delete_file_query = "DELETE FROM Files " \
+                        "WHERE file_id = {file_id}"
     conn = None
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(f"BEGIN; "
                         f"{update_disks_free_space_query}; "
                         f"{delete_file_query}; "
-                        f"COMMIT;").format(id=sql.Literal(file.getFileID()),
-                                           type=sql.Literal(file.getType()),
-                                           size=sql.Literal(file.getSize()))
+                        f"COMMIT;").format(file_id=sql.Literal(file.getFileID()),
+                                           file_size=sql.Literal(file.getSize()))
         conn.execute(query)
     except DatabaseException:
         conn.rollback()
@@ -260,7 +252,6 @@ def getDiskByID(diskID: int) -> Disk:
         if conn:
             conn.close()
     if not result.isEmpty():
-        assert rows_effected == 1
         row = result[0]
         return Disk(row["disk_id"], row["company"], row["speed"], row["free_space"], row["cost"])
     return Disk.badDisk()
@@ -328,7 +319,6 @@ def getRAMByID(ramID: int) -> RAM:
         if conn:
             conn.close()
     if not result.isEmpty():
-        assert rows_effected == 1
         row = result[0]
         return RAM(row["ram_id"], row["company"], row["size"])
     return RAM.badRAM()
@@ -405,17 +395,16 @@ def addDiskAndFile(disk: Disk, file: File) -> Status:
 
 
 def addFileToDisk(file: File, diskID: int) -> Status:
-    insert_file_to_disk_query = "INSERT INTO FilesInDisks VALUES ({file_id}, {disk_id});"
+    insert_file_to_disk_query = "INSERT INTO FilesInDisks VALUES ({file_id}, {disk_id})"
     update_free_space_query = "UPDATE Disks " \
                               "SET free_space = free_space - {file_size} " \
-                              "WHERE disk_id = {disk_id}" \
-                              ";"
+                              "WHERE disk_id = {disk_id}"
     conn = None
     try:
         conn = Connector.DBConnector()
         query = sql.SQL(f"BEGIN; "
-                        f"{insert_file_to_disk_query} "
-                        f"{update_free_space_query} "
+                        f"{insert_file_to_disk_query}; "
+                        f"{update_free_space_query}; "
                         f"COMMIT;").format(file_id=sql.Literal(file.getFileID()),
                                            disk_id=sql.Literal(diskID),
                                            file_size=sql.Literal(file.getSize()))
@@ -581,7 +570,7 @@ def getCostForType(type: str) -> int:
     get_cost_for_type_query = "SELECT SUM(F.size * D.cost) " \
                               "FROM Files F, Disks D, FilesInDisks FD " \
                               "WHERE " \
-                              "F.type = {type} " \
+                              "F.type = {file_type} " \
                               "AND " \
                               "F.file_id = FD.file_id " \
                               "AND " \
@@ -590,7 +579,7 @@ def getCostForType(type: str) -> int:
     conn = None
     try:
         conn = Connector.DBConnector()
-        query = sql.SQL(get_cost_for_type_query).format(type=sql.Literal(type))
+        query = sql.SQL(get_cost_for_type_query).format(file_type=sql.Literal(type))
         rows_affected, result = conn.execute(query)
         conn.commit()
     except DatabaseException:
@@ -752,6 +741,7 @@ def mostAvailableDisks() -> List[int]:
 
 
 def getCloseFiles(fileID: int) -> List[int]:
+    is_file_exists = "SELECT file_id FROM Files Where file_id = {file_id}"
     disks_counter = "SELECT COUNT(disk_id) FROM FilesInDisks WHERE file_id = {file_id}"
     disks_with_file_id = "SELECT disk_id FROM FilesInDisks WHERE file_id = {file_id}"
     close_files_aux = "SELECT file_id " \
@@ -764,7 +754,9 @@ def getCloseFiles(fileID: int) -> List[int]:
     close_files_query = f"SELECT file_id " \
                         f"FROM Files " \
                         f"WHERE (file_id IN ({close_files_aux})) " \
-                        f"OR ((0 = ({disks_counter})) " + "AND file_id <> {file_id})" \
+                        f"OR ((0 = ({disks_counter})) " + \
+                        "AND file_id <> {file_id} " + \
+                        f"AND EXISTS ({is_file_exists})) " \
                         "ORDER BY file_id ASC " \
                         "LIMIT 10 " \
                         ";"

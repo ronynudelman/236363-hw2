@@ -253,8 +253,8 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
         self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
 
-        self.assertEqual([1, 2, 3, 4, 5], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
-        self.assertEqual([1, 3, 4], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
+        self.assertEqual([6, 5, 4, 3, 2], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
+        self.assertEqual([4, 3, 1], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
 
     def test_getFilesCanBeAddedToDiskAndRAM(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
@@ -386,9 +386,7 @@ class Test(AbstractTest):
                                                           speed=20,
                                                           free_space=1500,
                                                           cost=50)))
-        # full list: [8, 3, 4, 1, 2, 7, 5, 6]
-        # top 5 list: [8, 3, 4, 1, 2]
-        self.assertEqual([8, 3, 4, 1, 2], Solution.mostAvailableDisks(), "Should work")
+        self.assertEqual([3, 4, 7, 8, 1], Solution.mostAvailableDisks(), "Should work")
 
     def test_getCloseFiles(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=962, cost=10)
@@ -421,11 +419,11 @@ class Test(AbstractTest):
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
         self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=4), "Should work")
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
-        self.assertEqual([1, 2, 3, 4, 5, 6], Solution.getCloseFiles(999),
-                         "all the files should be return - file_id 999 does not exist")
+        self.assertEqual([], Solution.getCloseFiles(999),
+                         "no files should be returned - file_id 999 does not exist")
         self.assertEqual(Status.OK, Solution.addFile(File(fileID=888, type='word', size=43)), "Should work")
         self.assertEqual([1, 2, 3, 4, 5, 6], Solution.getCloseFiles(888),
-                         "all the files should be return - file_id 888 is not saved on any disk")
+                         "all the files should be returned - file_id 888 is not saved on any disk")
 
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
