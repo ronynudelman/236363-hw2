@@ -22,6 +22,8 @@ class Test(AbstractTest):
                          "ID 2 already exists")
         self.assertEqual(Status.BAD_PARAMS, Solution.addFile(File(fileID=1, type="pdf", size=-7)),
                          "Size is negative")
+        self.assertEqual(Status.BAD_PARAMS, Solution.addFile(File(fileID=1, type=None, size=10)),
+                         "Type is None")
         file = Solution.getFileByID(fileID=3)
         assert file.getFileID() == 3
         assert file.getType() == "pdf"
@@ -144,7 +146,7 @@ class Test(AbstractTest):
         assert disk2_test.getFreeSpace() == 140, "We should get the space back"
 
         # test deleting file from disk where the file has the same id of an existing file on this disk
-        # but with different size and type actually.
+        # but with different size and type.
         # no changes should be made!
         file3 = File(fileID=234, type="pdf", size=100)
         disk3 = Disk(diskID=345, company="disks", speed=12, free_space=190, cost=130)
@@ -187,6 +189,19 @@ class Test(AbstractTest):
         disk = Disk(diskID=2, company="pdf", speed=10, free_space=92, cost=87)
         self.assertEqual(Status.OK, Solution.addDisk(disk=disk), "Should work")
         self.assertEqual(0.0, Solution.averageFileSizeOnDisk(2), "Should get None - there are no files on diskID 2")
+
+        self.assertEqual(Status.OK, Solution.addFile(File(67, "jpg", 1)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(68, "jpg", 2)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(69, "jpg", 3)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFile(File(70, "jpg", 4)), "Should work")
+        self.assertEqual(Status.OK, Solution.addDisk(Disk(diskID=97, company="plm",
+                                                          speed=543, free_space=9876, cost=10)), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(67, "jpg", 1), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(68, "jpg", 2), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(69, "jpg", 3), diskID=97), "Should work")
+        self.assertEqual(Status.OK, Solution.addFileToDisk(file=File(70, "jpg", 4), diskID=97), "Should work")
+        self.assertEqual(2.5, Solution.averageFileSizeOnDisk(97), "Should work")
+
 
     def test_diskTotalRAM(self) -> None:
         disk = Disk(diskID=1, company="pdf", speed=10, free_space=92, cost=87)
@@ -238,8 +253,8 @@ class Test(AbstractTest):
         self.assertEqual(Status.OK, Solution.addFile(file5), "Should work")
         self.assertEqual(Status.OK, Solution.addFile(file6), "Should work")
 
-        self.assertEqual([1, 2, 3, 4, 5], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
-        self.assertEqual([1, 3, 4], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
+        self.assertEqual([6, 5, 4, 3, 2], Solution.getFilesCanBeAddedToDisk(diskID=1), "Should work")
+        self.assertEqual([4, 3, 1], Solution.getFilesCanBeAddedToDisk(diskID=2), "Should work")
 
     def test_getFilesCanBeAddedToDiskAndRAM(self) -> None:
         disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
@@ -371,12 +386,10 @@ class Test(AbstractTest):
                                                           speed=20,
                                                           free_space=1500,
                                                           cost=50)))
-        # full list: [8, 3, 4, 1, 2, 7, 5, 6]
-        # top 5 list: [8, 3, 4, 1, 2]
-        self.assertEqual([8, 3, 4, 1, 2], Solution.mostAvailableDisks(), "Should work")
+        self.assertEqual([3, 4, 7, 8, 1], Solution.mostAvailableDisks(), "Should work")
 
-    def test_mostAvailableDisks(self) -> None:
-        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=92, cost=10)
+    def test_getCloseFiles(self) -> None:
+        disk1 = Disk(diskID=1, company="disks", speed=10, free_space=962, cost=10)
         disk2 = Disk(diskID=2, company="disks", speed=10, free_space=500, cost=20)
         disk3 = Disk(diskID=3, company="disks", speed=10, free_space=500, cost=20)
         disk4 = Disk(diskID=4, company="disks", speed=10, free_space=500, cost=20)
@@ -406,6 +419,12 @@ class Test(AbstractTest):
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
         self.assertEqual(Status.OK, Solution.addFileToDisk(file=file1, diskID=4), "Should work")
         self.assertEqual([], Solution.getCloseFiles(1), "this should return empty list")
+        self.assertEqual([], Solution.getCloseFiles(999),
+                         "no files should be returned - file_id 999 does not exist")
+        self.assertEqual(Status.OK, Solution.addFile(File(fileID=888, type='word', size=43)), "Should work")
+        self.assertEqual([1, 2, 3, 4, 5, 6], Solution.getCloseFiles(888),
+                         "all the files should be returned - file_id 888 is not saved on any disk")
+
 
 # *** DO NOT RUN EACH TEST MANUALLY ***
 if __name__ == '__main__':
